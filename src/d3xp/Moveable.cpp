@@ -285,13 +285,13 @@ bool idMoveable::Collide( const trace_t &collision, const idVec3 &velocity ) {
 				if ( ent->IsType( idAI::Type ) && hasMonsterDamage ) {
 #ifdef _D3XP
 					if ( attacker ) {
-						ent->Damage( this, attacker, dir, monsterDamage, f, INVALID_JOINT );
+						ent->Damage( this, attacker, dir, monsterDamage, f, INVALID_JOINT, idVec3( collision.c.point ) );
 					}
 					else {
-						ent->Damage( this, GetPhysics()->GetClipModel()->GetOwner(), dir, monsterDamage, f, INVALID_JOINT );
+						ent->Damage( this, GetPhysics()->GetClipModel()->GetOwner(), dir, monsterDamage, f, INVALID_JOINT, idVec3( collision.c.point ) );
 					}
 #else
-					ent->Damage( this, GetPhysics()->GetClipModel()->GetOwner(), dir, monsterDamage, f, INVALID_JOINT );
+					ent->Damage( this, GetPhysics()->GetClipModel()->GetOwner(), dir, monsterDamage, f, INVALID_JOINT, collision.c.point );
 #endif
 				} else if ( hasDamage ) {
 #ifdef _D3XP
@@ -301,13 +301,13 @@ bool idMoveable::Collide( const trace_t &collision, const idVec3 &velocity ) {
 					}
 
 					if ( attacker ) {
-						ent->Damage( this, attacker, dir, damage, f, INVALID_JOINT );
+						ent->Damage( this, attacker, dir, damage, f, INVALID_JOINT, idVec3( collision.c.point ) );
 					}
 					else {
-						ent->Damage( this, GetPhysics()->GetClipModel()->GetOwner(), dir, damage, f, INVALID_JOINT );
+						ent->Damage( this, GetPhysics()->GetClipModel()->GetOwner(), dir, damage, f, INVALID_JOINT, idVec3( collision.c.point ) );
 					}
 #else
-					ent->Damage( this, GetPhysics()->GetClipModel()->GetOwner(), dir, damage, f, INVALID_JOINT );
+					ent->Damage( this, GetPhysics()->GetClipModel()->GetOwner(), dir, damage, f, INVALID_JOINT, collision.c.point );
 #endif
 				}
 
@@ -1200,7 +1200,7 @@ idExplodingBarrel::Damage
 ================
 */
 void idExplodingBarrel::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir, 
-					  const char *damageDefName, const float damageScale, const int location ) {
+					  const char *damageDefName, const float damageScale, const int location, const idVec3 &iPoint ) {
 
 	const idDict *damageDef = gameLocal.FindEntityDefDict( damageDefName );
 	if ( !damageDef ) {
@@ -1209,7 +1209,7 @@ void idExplodingBarrel::Damage( idEntity *inflictor, idEntity *attacker, const i
 	if ( damageDef->FindKey( "radius" ) && GetPhysics()->GetContents() != 0 && GetBindMaster() == NULL ) {
 		PostEventMS( &EV_Explode, 400 );
 	} else {
-		idEntity::Damage( inflictor, attacker, dir, damageDefName, damageScale, location );
+		idEntity::Damage( inflictor, attacker, dir, damageDefName, damageScale, location, iPoint );
 	}
 }
 

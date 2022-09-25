@@ -355,6 +355,9 @@ idAI::idAI() {
 	eyeFocusRate		= 0.0f;
 	headFocusRate		= 0.0f;
 	focusAlignTime		= 0;
+
+	// HEXEN : Zeroth
+	ignoreObstacles		= false;
 }
 
 /*
@@ -502,6 +505,9 @@ void idAI::Save( idSaveGame *savefile ) const {
 	savefile->WriteJoint( flyTiltJoint );
 
 	savefile->WriteBool( GetPhysics() == static_cast<const idPhysics *>(&physicsObj) );
+
+	// HEXEN : Zeroth
+	savefile->WriteBool( ignoreObstacles );
 }
 
 /*
@@ -669,6 +675,14 @@ void idAI::Restore( idRestoreGame *savefile ) {
 	if ( restorePhysics ) {
 		RestorePhysics( &physicsObj );
 	}
+
+	savefile->ReadBool( ignoreObstacles );
+}
+
+// Hexen : Zeroth
+void idAI::Kill( void ) {
+	health = 0;
+	DirectDamage( "damage_generic", this );
 }
 
 /*
@@ -1020,6 +1034,11 @@ idAI::Think
 =====================
 */
 void idAI::Think( void ) {
+	// HEXEN : Zeroth
+	if ( !AI_DEAD && gameLocal.time < onFire || onFire == -1 ) {
+		EmitFlames();
+	}
+
 	// if we are completely closed off from the player, don't do anything at all
 	if ( CheckDormant() ) {
 		return;
@@ -1659,6 +1678,10 @@ bool idAI::MoveToEnemy( void ) {
 		move.startTime		= gameLocal.time;
 	}
 
+	if ( spawnArgs.GetBool( "wall_walker" ) ) {
+		move.moveDest.z		= lastVisibleEnemyPos.z;
+	}
+
 	move.moveDest		= pos;
 	move.goalEntity		= enemyEnt;
 	move.speed			= fly_speed;
@@ -1898,6 +1921,85 @@ bool idAI::MoveToPosition( const idVec3 &pos ) {
 	return true;
 }
 
+// HEXEN : Zeroth
+void idAI::MoveForward( void ) {
+	idVec3		pos;
+	//idVec3		org;
+	//int			areaNum;
+	//aasPath_t	path;
+	idVec3		dir;
+
+	//ideal_yaw = current_yaw;
+	//idVec3 dir=angles.ToForward() * physicsObj.GetGravityAxis();
+	idAngles ang;
+	ang.yaw = ideal_yaw;
+	ang.ToVectors( &dir );
+	dir.Normalize();
+	pos = physicsObj.GetOrigin() + (dir * 64);
+	
+	//idVec3 dir;
+	//idVec3 local_dir;
+	//float lengthSqr;
+
+//	dir = pos - physicsObj.GetOrigin();
+
+//	physicsObj.GetGravityAxis().ProjectVector( dir, local_dir );
+//	local_dir.z = 0.0f;
+//	lengthSqr = local_dir.LengthSqr();
+//	if ( lengthSqr > Square( 2.0f ) || ( lengthSqr > Square( 0.1f ) && enemy.GetEntity() == NULL ) ) {
+//		ideal_yaw = idMath::AngleNormalize180( local_dir.ToYaw() );
+//	}
+
+	DirectMoveToPosition(pos);
+	TurnToward( pos );
+}
+
+/*
+=====================
+idAI::Event_GetJumpVelocity
+=====================
+*/
+idVec3 idAI::GetJumpVelocity( const idVec3 &pos, float speed, float max_height ) {
+	idVec3 start;
+	idVec3 end;
+	idVec3 dir;
+	float dist;
+	bool result;
+	idEntity *enemyEnt = enemy.GetEntity();
+
+	if ( !enemyEnt ) {
+		return vec3_zero;
+	}
+
+	if ( speed <= 0.0f ) {
+		gameLocal.Error( "Invalid speed.  speed must be > 0." );
+	}
+
+	start = physicsObj.GetOrigin();
+	end = pos;
+	dir = end - start;
+	dist = dir.Normalize();
+	if ( dist > 16.0f ) {
+		dist -= 16.0f;
+		end -= dir * 16.0f;
+	}
+
+	result = PredictTrajectory( start, end, speed, physicsObj.GetGravity(), physicsObj.GetClipModel(), MASK_MONSTERSOLID, max_height, this, enemyEnt, ai_debugMove.GetBool() ? 4000 : 0, dir );
+	if ( result ) {
+		return dir * speed ;
+	} else {
+		return vec3_zero ;
+	}
+}
+
+// HEXEN : Zeroth
+idVec3 idAI::FacingNormal( void ) {
+	idVec3 dir=viewAxis[ 0 ] * physicsObj.GetGravityAxis();
+    dir.Normalize();
+	return dir;
+}
+
+
 /*
 =====================
 idAI::MoveToCover
@@ -2117,6 +2219,11 @@ bool idAI::NewWanderDir( const idVec3 &dest ) {
 		if ( tdir != turnaround && StepDirection( tdir ) ) {
 			return true;
 		}
+	}
+
+	// HEXEN : Zeroth - always move direcly toward the player when ignoring obstacles.
+	if ( ignoreObstacles ) {
+		return true;
 	}
 
 	// try other directions
@@ -2659,10 +2766,16 @@ void idAI::AnimMove( void ) {
 		if ( gameLocal.time < move.startTime + move.duration ) {
 			goalPos = move.moveDest - move.moveDir * MS2SEC( move.startTime + move.duration - gameLocal.time );
 			delta = goalPos - oldorigin;
-			delta.z = 0.0f;
+			if ( !spawnArgs.GetBool( "wall_walker" ) ) {
+				gameLocal.Printf("lolz\n");
+				delta.z = 0.0f;
+			}
 		} else {
 			delta = move.moveDest - oldorigin;
-			delta.z = 0.0f;
+			if ( !spawnArgs.GetBool( "wall_walker" ) ) {
+				gameLocal.Printf("lolz mang\n");
+				delta.z = 0.0f;
+			}
 			StopMove( MOVE_STATUS_DONE );
 		}
 	} else if ( allowMove ) {
@@ -2689,7 +2802,7 @@ void idAI::AnimMove( void ) {
 	}
 
 	moveResult = physicsObj.GetMoveResult();
-	if ( !af_push_moveables && attack.Length() && TestMelee() ) {
+	if ( !af_push_moveables && attack.Length() && TestMelee( idVec3() ) ) {
 		DirectDamage( attack, enemy.GetEntity() );
 	} else {
 		idEntity *blockEnt = physicsObj.GetSlideMoveEntity();
@@ -2818,7 +2931,7 @@ void idAI::SlideMove( void ) {
 	}
 
 	moveResult = physicsObj.GetMoveResult();
-	if ( !af_push_moveables && attack.Length() && TestMelee() ) {
+	if ( !af_push_moveables && attack.Length() && TestMelee( idVec3() ) ) {
 		DirectDamage( attack, enemy.GetEntity() );
 	} else {
 		idEntity *blockEnt = physicsObj.GetSlideMoveEntity();
@@ -3066,7 +3179,7 @@ void idAI::FlyMove( void ) {
 	RunPhysics();
 
 	monsterMoveResult_t	moveResult = physicsObj.GetMoveResult();
-	if ( !af_push_moveables && attack.Length() && TestMelee() ) {
+	if ( !af_push_moveables && attack.Length() && TestMelee( idVec3() ) ) {
 		DirectDamage( attack, enemy.GetEntity() );
 	} else {
 		idEntity *blockEnt = physicsObj.GetSlideMoveEntity();
@@ -3120,7 +3233,7 @@ void idAI::StaticMove( void ) {
 
 	AI_ONGROUND = false;
 
-	if ( !af_push_moveables && attack.Length() && TestMelee() ) {
+	if ( !af_push_moveables && attack.Length() && TestMelee( idVec3() ) ) {
 		DirectDamage( attack, enemyEnt );
 	}
 
@@ -3379,6 +3492,7 @@ void idAI::Killed( idEntity *inflictor, idEntity *attacker, int damage, const id
 	if ( ( attacker && attacker->IsType( idPlayer::Type ) ) && ( inflictor && !inflictor->IsType( idSoulCubeMissile::Type ) ) ) {
 		static_cast< idPlayer* >( attacker )->AddAIKill();
 	}
+	gameLocal.SetPersistentRemove(name.c_str());
 }
 
 /***********************************************************************
@@ -4238,7 +4352,7 @@ void idAI::DirectDamage( const char *meleeDefName, idEntity *ent ) {
 	idVec3	globalKickDir;
 	globalKickDir = ( viewAxis * physicsObj.GetGravityAxis() ) * kickDir;
 
-	ent->Damage( this, this, globalKickDir, meleeDefName, 1.0f, INVALID_JOINT );
+	ent->Damage( this, this, globalKickDir, meleeDefName, 1.0f, INVALID_JOINT, idVec3(0,0,0) );
 
 	// end the attack if we're a multiframe attack
 	EndAttack();
@@ -4249,7 +4363,7 @@ void idAI::DirectDamage( const char *meleeDefName, idEntity *ent ) {
 idAI::TestMelee
 =====================
 */
-bool idAI::TestMelee( void ) const {
+bool idAI::TestMelee( const idVec3 &iPoint ) const {
 	trace_t trace;
 	idActor *enemyEnt = enemy.GetEntity();
 
@@ -4288,6 +4402,7 @@ bool idAI::TestMelee( void ) const {
 
 	gameLocal.clip.TracePoint( trace, start, end, MASK_SHOT_BOUNDINGBOX, this );
 	if ( ( trace.fraction == 1.0f ) || ( gameLocal.GetTraceEntity( trace ) == enemyEnt ) ) {
+//		iPoint = trace.c.point;
 		return true;
 	}
 
@@ -4348,7 +4463,8 @@ bool idAI::AttackMelee( const char *meleeDefName ) {
 	}
 
 	// make sure the trace can actually hit the enemy
-	if ( forceMiss || !TestMelee() ) {
+	idVec3 iPoint;
+	if ( forceMiss || !TestMelee( iPoint ) ) {
 		// missed
 		p = meleeDef->GetString( "snd_miss" );
 		if ( p && *p ) {
@@ -4373,7 +4489,7 @@ bool idAI::AttackMelee( const char *meleeDefName ) {
 	idVec3	globalKickDir;
 	globalKickDir = ( viewAxis * physicsObj.GetGravityAxis() ) * kickDir;
 
-	enemyEnt->Damage( this, this, globalKickDir, meleeDefName, 1.0f, INVALID_JOINT );
+	enemyEnt->Damage( this, this, globalKickDir, meleeDefName, 1.0f, INVALID_JOINT, iPoint );
 
 	lastAttackTime = gameLocal.time;
 
@@ -4414,7 +4530,7 @@ void idAI::PushWithAF( void ) {
 			vel = ent->GetPhysics()->GetAbsBounds().GetCenter() - touchList[ i ].touchedByBody->GetWorldOrigin();
 			vel.Normalize();
 			if ( attack.Length() && ent->IsType( idActor::Type ) ) {
-				ent->Damage( this, this, vel, attack, 1.0f, INVALID_JOINT );
+				ent->Damage( this, this, vel, attack, 1.0f, INVALID_JOINT, idVec3(0,0,0) );
 			} else {
 				ent->GetPhysics()->SetLinearVelocity( 100.0f * vel, touchList[ i ].touchedClipModel->GetId() );
 			}

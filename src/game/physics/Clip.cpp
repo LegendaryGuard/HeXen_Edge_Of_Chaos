@@ -1639,3 +1639,9 @@ bool idClip::DrawModelContactFeature( const contactInfo_t &contact, const idClip
 
 	return true;
 }
+
+
+// HEXEN : Zeroth
+int idClipModel::GetRenderModelHandle( void ) {
+	return renderModelHandle;
+}

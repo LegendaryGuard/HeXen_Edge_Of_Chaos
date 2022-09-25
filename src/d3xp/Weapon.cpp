@@ -323,10 +323,10 @@ void idWeapon::Save( idSaveGame *savefile ) const {
 	savefile->WriteVec3( muzzle_kick_offset );
 
 	savefile->WriteInt( ammoType );
-	savefile->WriteInt( ammoRequired );
-	savefile->WriteInt( clipSize );
-	savefile->WriteInt( ammoClip );
-	savefile->WriteInt( lowAmmo );
+	savefile->WriteFloat( ammoRequired );
+	savefile->WriteFloat( clipSize );
+	savefile->WriteFloat( ammoClip );
+	savefile->WriteFloat( lowAmmo );
 	savefile->WriteBool( powerAmmo );
 
 	// savegames <= 17
@@ -522,10 +522,10 @@ void idWeapon::Restore( idRestoreGame *savefile ) {
 	savefile->ReadVec3( muzzle_kick_offset );
 
 	savefile->ReadInt( (int &)ammoType );
-	savefile->ReadInt( ammoRequired );
-	savefile->ReadInt( clipSize );
-	savefile->ReadInt( ammoClip );
-	savefile->ReadInt( lowAmmo );
+	savefile->ReadFloat( ammoRequired );
+	savefile->ReadFloat( clipSize );
+	savefile->ReadFloat( ammoClip );
+	savefile->ReadFloat( lowAmmo );
 	savefile->ReadBool( powerAmmo );
 
 	// savegame versions <= 17
@@ -918,9 +918,9 @@ void idWeapon::GetWeaponDef( const char *objectname, int ammoinclip ) {
 	weaponDef			= gameLocal.FindEntityDef( objectname );
 
 	ammoType			= GetAmmoNumForName( weaponDef->dict.GetString( "ammoType" ) );
-	ammoRequired		= weaponDef->dict.GetInt( "ammoRequired" );
-	clipSize			= weaponDef->dict.GetInt( "clipSize" );
-	lowAmmo				= weaponDef->dict.GetInt( "lowAmmo" );
+	ammoRequired		= weaponDef->dict.GetFloat( "ammoRequired" );
+	clipSize			= weaponDef->dict.GetFloat( "clipSize" );
+	lowAmmo				= weaponDef->dict.GetFloat( "lowAmmo" );
 
 	icon				= weaponDef->dict.GetString( "icon" );
 	silent_fire			= weaponDef->dict.GetBool( "silent_fire" );
@@ -2860,7 +2860,7 @@ void idWeapon::Event_WeaponLowering( void ) {
 idWeapon::Event_UseAmmo
 ===============
 */
-void idWeapon::Event_UseAmmo( int amount ) {
+void idWeapon::Event_UseAmmo( float amount ) {
 	if ( gameLocal.isClient ) {
 		return;
 	}
@@ -2879,7 +2879,7 @@ void idWeapon::Event_UseAmmo( int amount ) {
 idWeapon::Event_AddToClip
 ===============
 */
-void idWeapon::Event_AddToClip( int amount ) {
+void idWeapon::Event_AddToClip( float amount ) {
 	int ammoAvail;
 
 	if ( gameLocal.isClient ) {
@@ -2887,7 +2887,7 @@ void idWeapon::Event_AddToClip( int amount ) {
 	}
 
 #ifdef _D3XP
-	int oldAmmo = ammoClip;
+	float oldAmmo = ammoClip;
 	ammoAvail = owner->inventory.HasAmmo( ammoType, ammoRequired ) + AmmoInClip();
 #endif
 
@@ -2907,7 +2907,7 @@ void idWeapon::Event_AddToClip( int amount ) {
 
 #ifdef _D3XP
 	// for shared ammo we need to use the ammo when it is moved into the clip
-	int usedAmmo = ammoClip - oldAmmo;
+	float usedAmmo = ammoClip - oldAmmo;
 	owner->inventory.UseAmmo(ammoType, usedAmmo);
 #endif
 }
@@ -2918,7 +2918,7 @@ idWeapon::Event_AmmoInClip
 ===============
 */
 void idWeapon::Event_AmmoInClip( void ) {
-	int ammo = AmmoInClip();
+	float ammo = AmmoInClip();
 	idThread::ReturnFloat( ammo );	
 }
 
@@ -2929,10 +2929,10 @@ idWeapon::Event_AmmoAvailable
 */
 void idWeapon::Event_AmmoAvailable( void ) {
 #ifdef _D3XP
-	int ammoAvail = owner->inventory.HasAmmo( ammoType, ammoRequired );
+	float ammoAvail = owner->inventory.HasAmmo( ammoType, ammoRequired );
 	ammoAvail += AmmoInClip();
 #else
-	int ammoAvail = owner->inventory.HasAmmo( ammoType, ammoRequired );
+	float ammoAvail = owner->inventory.HasAmmo( ammoType, ammoRequired );
 #endif
 
 	idThread::ReturnFloat( ammoAvail );
@@ -3274,14 +3274,14 @@ void idWeapon::Event_LaunchProjectiles( int num_projectiles, float spread, float
 
 #ifdef _D3XP
 
-		int ammoAvail = owner->inventory.HasAmmo( ammoType, ammoRequired );
+		float ammoAvail = owner->inventory.HasAmmo( ammoType, ammoRequired );
 		if ( ( clipSize != 0 ) && ( ammoClip <= 0 ) ) {
 			return;
 		}
 
 #else
 		// check if we're out of ammo or the clip is empty
-		int ammoAvail = owner->inventory.HasAmmo( ammoType, ammoRequired );
+		float ammoAvail = owner->inventory.HasAmmo( ammoType, ammoRequired );
 		if ( !ammoAvail || ( ( clipSize != 0 ) && ( ammoClip <= 0 ) ) ) {
 			return;
 		}
@@ -3475,7 +3475,7 @@ void idWeapon::Event_LaunchProjectilesEllipse( int num_projectiles, float spread
 	// avoid all ammo considerations on a client
 	if ( !gameLocal.isClient ) {
 
-		int ammoAvail = owner->inventory.HasAmmo( ammoType, ammoRequired );
+		float ammoAvail = owner->inventory.HasAmmo( ammoType, ammoRequired );
 		if ( ( clipSize != 0 ) && ( ammoClip <= 0 ) ) {
 			return;
 		}
@@ -3590,7 +3590,7 @@ void idWeapon::Event_LaunchProjectilesEllipse( int num_projectiles, float spread
 * Gives the player a powerup as if it were a weapon shot. It will use the ammo amount specified
 * as ammoRequired.
 */
-void idWeapon::Event_LaunchPowerup( const char* powerup, float duration, int useAmmo ) {
+void idWeapon::Event_LaunchPowerup( const char* powerup, float duration, float useAmmo ) {
 
 	if ( IsHidden() ) {
 		return; 
@@ -3598,7 +3598,7 @@ void idWeapon::Event_LaunchPowerup( const char* powerup, float duration, int use
 
 	// check if we're out of ammo
 	if(useAmmo) {
-		int ammoAvail = owner->inventory.HasAmmo( ammoType, ammoRequired );
+		float ammoAvail = owner->inventory.HasAmmo( ammoType, ammoRequired );
 		if ( !ammoAvail ) {
 			return;
 		}
@@ -3762,7 +3762,7 @@ void idWeapon::Event_Melee( void ) {
 					//Only do a quater of the damage mod
 					mod *= 0.25f;
 				}
-				ent->Damage( owner, owner, globalKickDir, meleeDefName, mod, tr.c.id );
+				ent->Damage( owner, owner, globalKickDir, meleeDefName, mod, tr.c.id, tr.c.point );
 #else
 				ent->Damage( owner, owner, globalKickDir, meleeDefName, owner->PowerUpModifier( MELEE_DAMAGE ), tr.c.id );
 #endif

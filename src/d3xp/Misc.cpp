@@ -3366,7 +3366,7 @@ void idShockwave::Think() {
 							idPlayer* player = static_cast< idPlayer* >( ent );
 							idVec3 dir = ent->GetPhysics()->GetOrigin() - pos;
 							dir.NormalizeFast();
-							player->Damage(NULL, NULL, dir, damageDef, 1.0f, INVALID_JOINT);
+							player->Damage(NULL, NULL, dir, damageDef, 1.0f, INVALID_JOINT, idVec3(0,0,0) );
 						}
 					}
 				}

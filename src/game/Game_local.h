@@ -12,6 +12,11 @@
 ===============================================================================
 */
 
+// HEXEN : Zeroth
+#define NUM_UNIQUE_ARTIFACTS	(16)
+#define EOC_NUM_VMODES	(15)
+#define EOC_RELEASE		(1)
+
 #define LAGO_IMG_WIDTH 64
 #define LAGO_IMG_HEIGHT 64
 #define LAGO_WIDTH	64
@@ -54,7 +59,7 @@ class idEditEntities;
 class idLocationEntity;
 
 #define	MAX_CLIENTS				32
-#define	GENTITYNUM_BITS			12
+#define	GENTITYNUM_BITS			13
 #define	MAX_GENTITIES			(1<<GENTITYNUM_BITS)
 #define	ENTITYNUM_NONE			(MAX_GENTITIES-1)
 #define	ENTITYNUM_WORLD			(MAX_GENTITIES-2)
@@ -84,11 +89,22 @@ void gameError( const char *fmt, ... );
 #include "MultiplayerGame.h"
 
 //============================================================================
+// HEXEN : Zeroth - Forward Declarations
+
+
+//============================================================================
 
 const int MAX_GAME_MESSAGE_SIZE		= 8192;
 const int MAX_ENTITY_STATE_SIZE		= 512;
 const int ENTITY_PVS_SIZE			= ((MAX_GENTITIES+31)>>5);
 const int NUM_RENDER_PORTAL_BITS	= idMath::BitsForInteger( PS_BLOCK_ALL );
+
+// HEXEN : Zeroth
+struct r_vmodes_type {
+	int width;
+	int height;
+	int ratio;
+};
 
 typedef struct entityState_s {
 	int						entityNumber;
@@ -226,6 +242,7 @@ public:
 	int						firstFreeIndex;			// first free index in the entities array
 	int						num_entities;			// current number <= MAX_GENTITIES
 	idHashIndex				entityHash;				// hash table to quickly find entities by name
+	idHashIndex				entypeHash;				// hash table to quickly find entities by type (works in paralel with entityHash)
 	idWorldspawn *			world;					// world entity
 	idLinkList<idEntity>	spawnedEntities;		// all spawned entities
 	idLinkList<idEntity>	activeEntities;			// all thinking entities (idEntity::thinkFlags != 0)
@@ -267,6 +284,7 @@ public:
 	int						previousTime;			// time in msec of last frame
 	int						time;					// in msec
 	static const int		msec = USERCMD_MSEC;	// time since last update in milliseconds
+	bool					paused;
 
 	int						vacuumAreaNum;			// -1 if level doesn't have any outside areas
 
@@ -287,6 +305,15 @@ public:
 
 	idEntityPtr<idEntity>	lastGUIEnt;				// last entity with a GUI, used by Cmd_NextGUI_f
 	int						lastGUI;				// last GUI on the lastGUIEnt
+
+// HEXEN : Zeroth
+public:
+	idEntityPtr<idEntity>	portalSkyEnt;
+	bool					portalSkyActive;
+	void					SetPortalSkyEnt( idEntity *ent );
+	bool					IsPortalSkyAcive();
+	r_vmodes_type				r_vmodes[EOC_NUM_VMODES];
+	int					r_vmode;
 
 	// ---------------------- Public idGame Interface -------------------
 
@@ -381,6 +408,11 @@ public:
 	bool					InPlayerPVS( idEntity *ent ) const;
 	bool					InPlayerConnectedArea( idEntity *ent ) const;
 
+public:
+	pvsHandle_t				GetPlayerPVS()			{ return playerPVS; };
+
+
+
 	void					SetCamera( idCamera *cam );
 	idCamera *				GetCamera( void ) const;
 	bool					SkipCinematic( void );
@@ -396,12 +428,16 @@ public:
 	static void				ArgCompletion_EntityName( const idCmdArgs &args, void(*callback)( const char *s ) );
 	idEntity *				FindTraceEntity( idVec3 start, idVec3 end, const idTypeInfo &c, const idEntity *skip ) const;
 	idEntity *				FindEntity( const char *name ) const;
+
+// HEXEN : Zeroth
+	idEntity *				FindEntityType( const idTypeInfo &type ) const;
+
 	idEntity *				FindEntityUsingDef( idEntity *from, const char *match ) const;
 	int						EntitiesWithinRadius( const idVec3 org, float radius, idEntity **entityList, int maxCount ) const;
 
 	void					KillBox( idEntity *ent, bool catch_teleport = false );
 	void					RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEntity *attacker, idEntity *ignoreDamage, idEntity *ignorePush, const char *damageDefName, float dmgPower = 1.0f );
-	void					RadiusPush( const idVec3 &origin, const float radius, const float push, const idEntity *inflictor, const idEntity *ignore, float inflictorScale, const bool quake );
+	void					RadiusPush( const idVec3 &origin, const float radius, const float push, const idEntity *inflictor, const idEntity *ignore, float inflictorScale, const bool quake, const bool notlocalplayer=false, const bool notprojectiles=true );
 	void					RadiusPushClipModel( const idVec3 &origin, const float push, const idClipModel *clipModel );
 
 	void					ProjectDecal( const idVec3 &origin, const idVec3 &dir, float depth, bool parallel, float size, const char *material, float angle = 0 );
@@ -442,9 +478,36 @@ public:
 
 	bool					NeedRestart();
 
-private:
-	const static int		INITIAL_SPAWN_COUNT = 1;
+	
+// HEXEN : Zeroth
+// HEXEN : Zeroth
+// ****** thanks SnoopJeDi ( http://www.doom3world.org/phpbb2/viewtopic.php?f=56&t=12469&p=214427#p214427 )
+	idList<int>             musicSpeakers; //SnoopJeDi - holds entitynum values for speakers with s_music set
+// ******
+	void					SetLocalPlayerSpawnPoint(idStr point);
+//	void					FoliageRendering( void );
+	idStr					eoc_MapPath;
+	void					InitHub(void);
+	void					SendLocalUserHudMessage( const char *message );
+	void					SendLocalUserHudMessage( idStr message );
+	void					UpdateFog( void );
+	void					SetPersistentRemove( const char *name );
+	void					SetPersistentLightOn( const char *name, bool state );
+	void					SetPersistentLightBroken( const char *name );
+	void					SetPersistentTrigger( const char *type, const char *name, const bool state );
+	void					SetPersistentTriggerInt( const char *type, const char *var, const char *name, int val );
+	void					SavePersistentMoveables(void);
+// HEXEN : Zeroth
+public:
+	idStr					eoc_LocalPlayerSpawnPoint;
+	float					eoc_MapLoading;
+	float					eoc_MapLoadingPrev;
+	idStr					mapNameForCheat;
+	idList<idVec3 *>		BanishLocationList;
 
+private:
+
+	const static int		INITIAL_SPAWN_COUNT = 1;
 	idStr					mapFileName;			// name of the map, empty string if no map loaded
 	idMapFile *				mapFile;				// will be NULL during the game unless in-game editing is used
 	bool					mapCycleLoaded;
@@ -486,6 +549,7 @@ private:
 
 	idStaticList<spawnSpot_t, MAX_GENTITIES> spawnSpots;
 	idStaticList<idEntity *, MAX_GENTITIES> initialSpots;
+
 	int						currentInitialSpot;
 
 	idDict					newInfo;
@@ -658,6 +722,7 @@ typedef enum {
 #define	MASK_SHOT_BOUNDINGBOX		(CONTENTS_SOLID|CONTENTS_BODY)
 
 const float DEFAULT_GRAVITY			= 1066.0f;
+const idVec3 DEFAULT_GRAVITY_NORMAL	= idVec3(0, 0, -1); // HEXEN : Zeroth
 #define DEFAULT_GRAVITY_STRING		"1066"
 const idVec3 DEFAULT_GRAVITY_VEC3( 0, 0, -DEFAULT_GRAVITY );
 
@@ -714,5 +779,16 @@ const int	CINEMATIC_SKIP_DELAY	= SEC2MS( 2.0f );
 #include "script/Script_Compiler.h"
 #include "script/Script_Interpreter.h"
 #include "script/Script_Thread.h"
+
+// HEXEN : Zeroth
+#include "projectiles/Wraithverge.h"
+#include "projectiles/FireStorm.h"
+#include "projectiles/Soul.h"
+#include "ai/AI_Veloxite.h"
+#include "ai/AI_Golem.h"
+#include "ai/AI_Shadowspawn.h"
+#include "objects/Tree.h"
+#include "objects/Leaf.h"
+#include "objects/LeafEmitter.h"
 
 #endif	/* !__GAME_LOCAL_H__ */
