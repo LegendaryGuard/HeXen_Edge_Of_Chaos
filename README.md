@@ -2,6 +2,10 @@
 
 Requires Doom3 1.3.1 SDK.
 
+Download the SDK here: https://www.moddb.com/games/doom-iii/downloads/sdk-1-3-1
+
+And copy `src` folder contents into Doom3 SDK directory.
+
 ## About
 
 Reference: https://web.archive.org/web/20190803175542/http://hexenmod.net/about/
