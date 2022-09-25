@@ -271,7 +271,7 @@ CORECPPPATH = [ ]
 CORELIBPATH = [ ]
 CORECPPFLAGS = [ ]
 GAMECPPFLAGS = [ ]
-BASELINKFLAGS = [ ]
+BASELINKFLAGS = [ "-m32" ]
 CORELINKFLAGS = [ ]
 
 # for release build, further optimisations that may not work on all files

@@ -1,0 +1,35 @@
+#!/bin/bash
+# this is a script to build the DLL on x86/amd64 linux with gcc 4
+
+MODDIR=/home/user/.doom3/trunk
+
+scons CXX="g++-4.4" BUILD=debug BASEFLAGS="-m32"
+
+if [ $? -ne 0 ]; then
+  echo ERROR;
+  exit;
+fi
+
+if [ $? -ne 0 ]; then
+  echo ERROR;
+  exit;
+fi
+
+cp ./build/release/game/sys/scons/libgame.so ./gamex86.so
+
+if [ $? -ne 0 ]; then
+  echo ERROR;
+  exit;
+fi
+
+echo "2" > binary.conf
+
+if [ $? -ne 0 ]; then
+  echo ERROR;
+  exit;
+fi
+
+rm $MODDIR/game01.pk4
+rm $MODDIR/gamex86.so
+rm $MODDIR/gamex86.dll
+zip $MODDIR/game01.pk4 gamex86.so binary.conf
