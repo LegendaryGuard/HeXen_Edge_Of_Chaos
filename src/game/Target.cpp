@@ -115,7 +115,7 @@ void idTarget_Damage::Event_Activate( idEntity *activator ) {
 	for( i = 0; i < targets.Num(); i++ ) {
 		ent = targets[ i ].GetEntity();
 		if ( ent ) {
-			ent->Damage( this, this, vec3_origin, damage, 1.0f, INVALID_JOINT );
+			ent->Damage( this, this, vec3_origin, damage, 1.0f, INVALID_JOINT, idVec3(0,0,0) );
 		}
 	}
 }
@@ -163,6 +163,8 @@ idTarget_EndLevel::Event_Activate
 */
 void idTarget_EndLevel::Event_Activate( idEntity *activator ) {
 	idStr nextMap;
+	idStr spawnPoint;
+	idStr endEoCRelease;
 
 #ifdef ID_DEMO_BUILD
 	if ( spawnArgs.GetBool( "endOfGame" ) ) {
@@ -181,6 +183,10 @@ void idTarget_EndLevel::Event_Activate( idEntity *activator ) {
 		gameLocal.Printf( "idTarget_SessionCommand::Event_Activate: no nextMap key\n" );
 		return;
 	}
+
+// HEXEN : Zeroth
+	spawnArgs.GetString( "spawnPoint", "", spawnPoint );
+	gameLocal.SetLocalPlayerSpawnPoint(spawnPoint);
 
 	if ( spawnArgs.GetInt( "devmap", "0" ) ) {
 		gameLocal.sessionCommand = "devmap ";	// only for special demos

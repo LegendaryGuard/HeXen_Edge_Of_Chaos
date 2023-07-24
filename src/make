@@ -1,0 +1,37 @@
+#!/bin/bash
+# this is a script to build the DLL on x86/amd64 linux with gcc 4
+# change MODDIR to your doom3 path or comment out the bottom of this
+# script to package it up manually
+
+MODDIR=/home/caibbor/.doom3/eoc
+
+scons CXX="g++-4.4" BUILD=release BASEFLAGS="-m32" TARGET_GAME=1 TARGET_D3XP=0 TARGET_CORE=0
+
+if [ $? -ne 0 ]; then
+  echo ERROR;
+  exit;
+fi
+
+if [ $? -ne 0 ]; then
+  echo ERROR;
+  exit;
+fi
+
+cp ./build/release/game/sys/scons/libgame.so ./gamex86.so
+
+if [ $? -ne 0 ]; then
+  echo ERROR;
+  exit;
+fi
+
+echo "2" > binary.conf
+
+if [ $? -ne 0 ]; then
+  echo ERROR;
+  exit;
+fi
+
+rm $MODDIR/game01.pk4
+rm $MODDIR/gamex86.so
+rm $MODDIR/gamex86.dll
+zip $MODDIR/game01.pk4 gamex86.so binary.conf

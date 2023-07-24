@@ -2774,7 +2774,7 @@ void idAI::AnimMove( void ) {
 	}
 
 	moveResult = physicsObj.GetMoveResult();
-	if ( !af_push_moveables && attack.Length() && TestMelee() ) {
+	if ( !af_push_moveables && attack.Length() && TestMelee( idVec3() ) ) {
 		DirectDamage( attack, enemy.GetEntity() );
 	} else {
 		idEntity *blockEnt = physicsObj.GetSlideMoveEntity();
@@ -2903,7 +2903,7 @@ void idAI::SlideMove( void ) {
 	}
 
 	moveResult = physicsObj.GetMoveResult();
-	if ( !af_push_moveables && attack.Length() && TestMelee() ) {
+	if ( !af_push_moveables && attack.Length() && TestMelee( idVec3() ) ) {
 		DirectDamage( attack, enemy.GetEntity() );
 	} else {
 		idEntity *blockEnt = physicsObj.GetSlideMoveEntity();
@@ -3151,7 +3151,7 @@ void idAI::FlyMove( void ) {
 	RunPhysics();
 
 	monsterMoveResult_t	moveResult = physicsObj.GetMoveResult();
-	if ( !af_push_moveables && attack.Length() && TestMelee() ) {
+	if ( !af_push_moveables && attack.Length() && TestMelee( idVec3() ) ) {
 		DirectDamage( attack, enemy.GetEntity() );
 	} else {
 		idEntity *blockEnt = physicsObj.GetSlideMoveEntity();
@@ -3205,7 +3205,7 @@ void idAI::StaticMove( void ) {
 
 	AI_ONGROUND = false;
 
-	if ( !af_push_moveables && attack.Length() && TestMelee() ) {
+	if ( !af_push_moveables && attack.Length() && TestMelee( idVec3() ) ) {
 		DirectDamage( attack, enemyEnt );
 	}
 
@@ -4374,7 +4374,7 @@ void idAI::DirectDamage( const char *meleeDefName, idEntity *ent ) {
 	idVec3	globalKickDir;
 	globalKickDir = ( viewAxis * physicsObj.GetGravityAxis() ) * kickDir;
 
-	ent->Damage( this, this, globalKickDir, meleeDefName, 1.0f, INVALID_JOINT );
+	ent->Damage( this, this, globalKickDir, meleeDefName, 1.0f, INVALID_JOINT, idVec3(0,0,0) );
 
 	// end the attack if we're a multiframe attack
 	EndAttack();
@@ -4385,7 +4385,7 @@ void idAI::DirectDamage( const char *meleeDefName, idEntity *ent ) {
 idAI::TestMelee
 =====================
 */
-bool idAI::TestMelee( void ) const {
+bool idAI::TestMelee( const idVec3 &iPoint ) const {
 	trace_t trace;
 	idActor *enemyEnt = enemy.GetEntity();
 
@@ -4424,6 +4424,8 @@ bool idAI::TestMelee( void ) const {
 
 	gameLocal.clip.TracePoint( trace, start, end, MASK_SHOT_BOUNDINGBOX, this );
 	if ( ( trace.fraction == 1.0f ) || ( gameLocal.GetTraceEntity( trace ) == enemyEnt ) ) {
+//		iPoint = trace.c.point;
+
 		return true;
 	}
 
@@ -4484,7 +4486,8 @@ bool idAI::AttackMelee( const char *meleeDefName ) {
 	}
 
 	// make sure the trace can actually hit the enemy
-	if ( forceMiss || !TestMelee() ) {
+	idVec3 iPoint;
+	if ( forceMiss || !TestMelee( iPoint) ) {
 		// missed
 		p = meleeDef->GetString( "snd_miss" );
 		if ( p && *p ) {
@@ -4509,7 +4512,7 @@ bool idAI::AttackMelee( const char *meleeDefName ) {
 	idVec3	globalKickDir;
 	globalKickDir = ( viewAxis * physicsObj.GetGravityAxis() ) * kickDir;
 
-	enemyEnt->Damage( this, this, globalKickDir, meleeDefName, 1.0f, INVALID_JOINT );
+	enemyEnt->Damage( this, this, globalKickDir, meleeDefName, 1.0f, INVALID_JOINT, iPoint );
 
 	lastAttackTime = gameLocal.time;
 
@@ -4550,7 +4553,7 @@ void idAI::PushWithAF( void ) {
 			vel = ent->GetPhysics()->GetAbsBounds().GetCenter() - touchList[ i ].touchedByBody->GetWorldOrigin();
 			vel.Normalize();
 			if ( attack.Length() && ent->IsType( idActor::Type ) ) {
-				ent->Damage( this, this, vel, attack, 1.0f, INVALID_JOINT );
+				ent->Damage( this, this, vel, attack, 1.0f, INVALID_JOINT, idVec3(0,0,0) );
 			} else {
 				ent->GetPhysics()->SetLinearVelocity( 100.0f * vel, touchList[ i ].touchedClipModel->GetId() );
 			}

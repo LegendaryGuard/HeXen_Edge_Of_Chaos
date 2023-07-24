@@ -1896,7 +1896,7 @@ idAI::Event_TestMeleeAttack
 =====================
 */
 void idAI::Event_TestMeleeAttack( void ) {
-	bool result = TestMelee();
+	bool result = TestMelee( idVec3() );
 	idThread::ReturnInt( result );
 }
 

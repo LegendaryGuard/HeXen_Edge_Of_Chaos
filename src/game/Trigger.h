@@ -38,6 +38,9 @@ protected:
 	void				Event_Enable( void );
 	void				Event_Disable( void );
 
+	//void				check_gravity();
+	void				eoc_Check_Automap( idEntity *activator ); // HEXEN : Zeroth
+
 	const function_t *	scriptFunction;
 };
 
@@ -167,6 +170,8 @@ public:
 
 	void				Save( idSaveGame *savefile ) const;
 	void				Restore( idRestoreGame *savefile );
+	void				SetCount( int c ) { count = c; };
+	void				SetGoal( int c ) { goal = c; };
 
 	void				Spawn( void );
 
@@ -202,10 +207,22 @@ public:
 private:
 	bool				on;
 	float				delay;
-	int					nextTime;
+	idList<idDict>		nextTime;
 
 	void				Event_Touch( idEntity *other, trace_t *trace );
 	void				Event_Toggle( idEntity *activator );
+
+// HEXEN : Zeroth
+private:
+	bool				dontTripby_LocalPlayer;
+	bool				limitEntityType;
+	bool				tripby_idPlayer;
+	bool				tripby_idAI;
+	bool				tripby_idMoveable;
+	bool				tripby_idItem;
+	bool				tripby_idActor;
+	bool				tripby_idProjectile;
+	bool				tripby_LocalPlayer;
 };
 
 
@@ -257,6 +274,36 @@ private:
 	idClipModel *		clipModel;
 
 	void				Event_Trigger( idEntity *activator );
+
+// HEXEN : Zeroth - for trigger_enter
+private:
+	bool				onEntrance;
+	idList<idStr>		touchingEntities;
+	idList<bool>		flagEntities;
+	idList<int>			resistTimeEntities;
+
+// HEXEN : Zeroth - for limit entity types
+private:
+	bool				dontTripby_LocalPlayer;
+	bool				limitEntityType;
+	bool				tripby_idPlayer;
+	bool				tripby_idAI;
+	bool				tripby_idMoveable;
+	bool				tripby_idItem;
+	bool				tripby_idActor;
+	bool				tripby_idProjectile;
+
+// HEXEN : Zeroth - for trigger_hurtmulti
+private:
+	bool				hurtmulti;
+
+// HEXEN : Zeroth - primarily for trigger_hurtmulti
+private:
+	float				delay;
+
+// HEXEN : Zeroth - for trigger_hurtmulti
+private:
+	idList<idDict>		nextTime; // HEXEN : Zeroth. changed to idlist. not really useful anymore.
 };
 
 #endif /* !__GAME_TRIGGER_H__ */

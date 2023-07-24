@@ -30,6 +30,8 @@ game_string = ' \
 	Player.cpp \
 	PlayerIcon.cpp \
 	PlayerView.cpp \
+	PlayerArtifacts.cpp \
+	PlayerScriptEvents.cpp \
 	Projectile.cpp \
 	Pvs.cpp \
 	SecurityCamera.cpp \
@@ -86,6 +88,16 @@ if ( local_d3xp ):
 	physics/Force_Grab.cpp'
 	game_list = scons_utils.BuildList( 'd3xp', game_string )
 else:
+	game_string += ' \
+	ai/AI_Veloxite.cpp \
+	ai/AI_Golem.cpp \
+	projectiles/FireStorm.cpp \
+	projectiles/Soul.cpp \
+	projectiles/Wraithverge.cpp \
+	objects/Leaf.cpp \
+	objects/LeafEmitter.cpp \
+	objects/Tree.cpp \
+	ai/AI_Shadowspawn.cpp'
 	game_list = scons_utils.BuildList( 'game', game_string )
 
 for i in range( len( game_list ) ):

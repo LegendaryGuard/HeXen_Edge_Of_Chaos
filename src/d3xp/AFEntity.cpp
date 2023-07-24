@@ -347,10 +347,10 @@ Pass damage to body at the bindjoint
 ============
 */
 void idAFAttachment::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir, 
-	const char *damageDefName, const float damageScale, const int location ) {
+	const char *damageDefName, const float damageScale, const int location, const idVec3 &iPoint ) {
 	
 	if ( body ) {
-		body->Damage( inflictor, attacker, dir, damageDefName, damageScale, attachJoint );
+		body->Damage( inflictor, attacker, dir, damageDefName, damageScale, attachJoint, iPoint );
 	}
 }
 
@@ -1069,11 +1069,11 @@ void idAFEntity_Gibbable::Present( void ) {
 idAFEntity_Gibbable::Damage
 ================
 */
-void idAFEntity_Gibbable::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir, const char *damageDefName, const float damageScale, const int location ) {
+void idAFEntity_Gibbable::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir, const char *damageDefName, const float damageScale, const int location, idVec3 &iPoint ) {
 	if ( !fl.takedamage ) {
 		return;
 	}
-	idAFEntity_Base::Damage( inflictor, attacker, dir, damageDefName, damageScale, location );
+	idAFEntity_Base::Damage( inflictor, attacker, dir, damageDefName, damageScale, location, iPoint );
 	if ( health < -20 && spawnArgs.GetBool( "gib" ) ) {
 		Gib( dir, damageDefName );
 	}
@@ -1116,7 +1116,7 @@ bool idAFEntity_Gibbable::Collide( const trace_t &collision, const idVec3 &veloc
 
 			ent = gameLocal.entities[ collision.c.entityNum ];
 			if ( ent->fl.takedamage ) {
-				ent->Damage( this, gameLocal.GetLocalPlayer(), collision.c.normal, "damage_thrown_ragdoll", 1.f, CLIPMODEL_ID_TO_JOINT_HANDLE( collision.c.id ) );
+				ent->Damage( this, gameLocal.GetLocalPlayer(), collision.c.normal, "damage_thrown_ragdoll", 1.f, (int)CLIPMODEL_ID_TO_JOINT_HANDLE( collision.c.id ), idVec3(collision.c.point));
 			}
 
 			idVec3 vel = velocity;
@@ -2489,7 +2489,7 @@ void idAFEntity_VehicleAutomated::Think( void ) {
 		gameRenderWorld->DebugBounds( colorRed, idBounds(idVec3(-4,-4,-4),idVec3(4,4,4)), vehicle_origin );
 		gameRenderWorld->DebugBounds( colorRed, idBounds(idVec3(-4,-4,-4),idVec3(4,4,4)), waypoint_origin );
 		gameRenderWorld->DrawText( waypoint->name.c_str(), waypoint_origin + idVec3(0,0,16), 0.25f, colorYellow, gameLocal.GetLocalPlayer()->viewAxis );
-		gameRenderWorld->DebugArrow( colorWhite, vehicle_origin, waypoint_origin, 12.f );
+		gameRenderWorld->DebugArrow( colorWhite, vehicle_origin, waypoint_origin, 12 );
 	}
 
 	// Set the final steerAngle for the vehicle
